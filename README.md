@@ -2,7 +2,7 @@
 [![Active Development](https://img.shields.io/badge/Maintenance%20Level-Actively%20Developed-brightgreen.svg)](https://gist.github.com/cheerfulstoic/d107229326a01ff0f333a1d3476e068d)
 [![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
 
-# nd2 to ome.tiff file conversion pipeline
+# .nd2 to .ome.tiff file conversion pipeline
 
 ## Contents
 - [Contents](#contents)
