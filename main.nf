@@ -2,6 +2,7 @@
 
 nextflow.enable.dsl=2
 
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     VALIDATE & PRINT PARAMETER SUMMARY
@@ -18,6 +19,8 @@ def checkPathParamList = [
 
 for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
+include {conversion} from './modules/local/nd2_to_ome_tiff/main.nf'
+/* include {conversion} from '/hpcnfs/scratch/DIMA/chiodin/repositories/nd2conversion/modules/local/nd2_to_ome_tiff/main.nf' */
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -55,36 +58,6 @@ def extract_csv(csv_file) {
         .map{ row -> 
             return row.nd2files 
             }
-}
-
-// Processes
-
-process conversion{
-    publishDir "${params.outdir}", mode: "copy"
-    container "docker://yinxiu/bftools:latest"
-    tag "nd2conversion"
-    input:
-        path(input)
-    output:
-        path("*/*")
-    script:
-    """
-        folder=`realpath $input`
-        folder=`dirname \$folder`
-        folder=`basename \$folder`
-        mkdir \$folder
-        
-        if [ ${params.database} != "null" ]; then
-            if grep -qw $input appo  ; then 
-                echo "Skipping $input" 
-            else
-                echo "$input" >> ${params.database}
-                bfconvert -noflat -bigtiff -tilex 512 -tiley 512 -pyramid-resolutions 3 -pyramid-scale 2 $input \$folder/${input.baseName}.ome.tiff
-            fi
-        else
-            bfconvert -noflat -bigtiff -tilex 512 -tiley 512 -pyramid-resolutions 3 -pyramid-scale 2 $input \$folder/${input.baseName}.ome.tiff
-        fi
-    """
 }
 
 input=extract_csv(file(params.input))
