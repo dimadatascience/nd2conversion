@@ -39,11 +39,11 @@ The nextflow pipeline takes a csv samplesheet with 1 column as input
 
 __IMPORTANT: HEADER is required__ 
 
-| nd2file                 | 
-| ---------------         | 
-| absolute/path/to/file_1 |
-| absolute/path/to/file_2 |
-| .....                   | 
+| nd2file                     | 
+| ---------------             | 
+| absolute/path/to/file_1.nd2 |
+| absolute/path/to/file_2.nd2 |
+| .....                       | 
 
 The absolute path to each file must be provided, __not__ the relative path.
 
