@@ -50,4 +50,4 @@ The absolute path to each file must be provided, __not__ the relative path.
 
 ## Output
 
-The pipeline converts files specified in the input csv table from nd2 to ome.tiff, and stores the converted file in the provided output directory. 
+The pipeline converts files specified in the input csv table from .nd2 to .ome.tiff, and stores the converted file in the provided output directory. 
