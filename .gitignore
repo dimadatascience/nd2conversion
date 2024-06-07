@@ -1,3 +1,7 @@
+# Hidden folders
+/hpcnfs/scratch/DIMA/chiodin/repositories/nd2conversion/.nextflow
+/hpcnfs/scratch/DIMA/chiodin/repositories/nd2conversion/work
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
