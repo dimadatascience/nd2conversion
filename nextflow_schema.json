@@ -280,6 +280,9 @@
             "$ref": "#/definitions/max_job_request_options"
         },
         {
+            "$ref": "#/definitions/conversion"
+        },
+        {
             "$ref": "#/definitions/generic_options"
         }
     ]
