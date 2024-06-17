@@ -232,7 +232,6 @@
                 "type": "integer",
                 "description": "Path to a database file.",
                 "default": "/hpcnfs/techunits/imaging/work/ATTEND/achiodin/nd2_to_ome_tiff/conversions_history/database.txt",
-                "hidden": true,
                 "help_text": "Path to file where conversions history is saved. Should be a string, e.g. `--database '/abs/path/to/file.txt'`"
             },
             "b_tilex": {
@@ -240,7 +239,6 @@
                 "description": "Width in pixels of each tile.",
                 "default": 512,
                 "pattern": "\\d+",
-                "hidden": true,
                 "help_text": "Use to set the width in pixels of each tile. Should be a an integer-unit e.g. `--b_tilex 512`"
             },
             "b_tiley": {
@@ -248,7 +246,6 @@
                 "description": "Height in pixels of each tile.",
                 "default": 512,
                 "pattern": "\\d+",
-                "hidden": true,
                 "help_text": "Use to set the height in pixels of each tile. Should be a an integer-unit e.g. `--b_tiley 512`"
             },
             "b_pyramid_resolutions": {
@@ -256,7 +253,6 @@
                 "description": "Number of expected resolutions in the output file for each series.",
                 "default": 3,
                 "pattern": "\\d+",
-                "hidden": true,
                 "help_text": "Set number of expected resolutions in the output file for each series. Should be an integer e.g. `--b_pyramid_resolutions 3`"
             },
             "b_pyramid_scale": {
@@ -264,7 +260,6 @@
                 "description": "Downsampling factor for additional pyramidal levels.",
                 "default": 2,
                 "pattern": "\\d+",
-                "hidden": true,
                 "help_text": "If the target number of resolutions is greater than the actual number of sub-resolutions present in the input file, additional pyramidal levels will be calculated using the downsampling factor specified by the -pyramid-scale option. Should be an integer e.g. `--b_pyramid_scale 2`"
             }
 
