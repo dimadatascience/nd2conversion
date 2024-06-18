@@ -4,7 +4,7 @@
     "type": "object",
     "definitions": {
         "input_output_options": {
-            "title": "Input/output options",
+            "title": "Input/Output options",
             "type": "object",
             "description": "Define where the pipeline should find input data and save output data.",
             "required": [
@@ -23,6 +23,35 @@
                     "type": "string",
                     "description": "The output directory where the results will be saved. You have to use absolute paths to storage on Cloud infrastructure.",
                     "examples": ["/absolute/path/to/output"]
+                }
+            }
+        },
+        "conversion_options": {
+            "title": "Conversion options",
+            "type": "object",
+            "description": "Define properties of the exported file.",
+            "required": [
+                "tilex",
+                "tiley",
+                "b_pyramid_resolutions",
+                "b_pyramid_scale"
+            ],
+            "properties": {
+                "tilex": {
+                    "type": "integer",
+                    "description": "Width in pixels of each tile"
+                },
+                "tiley": {
+                    "type": "integer",
+                    "description": "Height in pixels of each tile"
+                },
+                "b_pyramid_resolutions": {
+                    "type": "integer",
+                    "description": "Number of expected resolutions in the output file for each series. If the target number of resolutions is greater than the actual number of sub-resolutions present in the input file, additional pyramidal levels will be calculated using the downsampling factor specified by the -b_pyramid_scale option."
+                },
+                "b_pyramid_scale": {
+                    "type": "integer",
+                    "description": "Downsampling factor used to calculate additional pyramidal levels."
                 }
             }
         }
@@ -270,6 +299,9 @@
             "$ref": "#/definitions/input_output_options"
         },
         {
+            "$ref": "#/definitions/conversion_options"
+        },
+        {
             "$ref": "#/definitions/institutional_config_options"
         },
         {
@@ -283,3 +315,4 @@
         }
     ]
 }
+
