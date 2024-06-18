@@ -31,17 +31,17 @@
             "type": "object",
             "description": "Define properties of the exported file.",
             "required": [
-                "tilex",
-                "tiley",
+                "b_tilex",
+                "b_tiley",
                 "b_pyramid_resolutions",
                 "b_pyramid_scale"
             ],
             "properties": {
-                "tilex": {
+                "b_tilex": {
                     "type": "integer",
                     "description": "Width in pixels of each tile"
                 },
-                "tiley": {
+                "b_tiley": {
                     "type": "integer",
                     "description": "Height in pixels of each tile"
                 },
