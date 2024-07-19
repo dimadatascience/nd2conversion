@@ -20,6 +20,7 @@ def checkPathParamList = [
 for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
 include {conversion} from './modules/local/nd2_to_ome_tiff/main.nf'
+include {image_registration} from './modules/local/image_registration/main.nf'
 /* include {conversion} from '/hpcnfs/scratch/DIMA/chiodin/repositories/nd2conversion/modules/local/nd2_to_ome_tiff/main.nf' */
 
 /*
@@ -38,7 +39,7 @@ def extract_csv(csv_file) {
         while ((line = reader.readLine()) != null) {
             numberOfLinesInSampleSheet++
             if (numberOfLinesInSampleSheet == 1){
-                def requiredColumns = ["nd2files"]
+                def requiredColumns = ["patient_id","nd2files", "fixed"]
                 def headerColumns = line
                 if (!requiredColumns.every { headerColumns.contains(it) }) {
                     log.error "Header missing or CSV file does not contain all of the required columns in the header: ${requiredColumns}"
@@ -52,16 +53,39 @@ def extract_csv(csv_file) {
             System.exit(1)
         }
     }
-
+ 
     Channel.from(csv_file)
         .splitCsv(header: true)
-        .map{ row -> 
-            return row.nd2files 
+        .map{ row ->
+            return [row.patient_id, row.nd2files, row.fixed]
             }
 }
 
 input=extract_csv(file(params.input))
 
 workflow {
-    conversion(input) 
+    conversion(input)
+
+    paired_channel = conversion.out["ome"].groupTuple(by:0).map {
+        patient_id, files, fixed_imgs ->
+
+
+        for (int i = 0; i < fixed_imgs.size(); i++) {
+            if(fixed_imgs[i] == 'true'){
+                fix_image = files[i]
+            }
+        }
+    
+        collector = []
+        for (int i = 0; i < fixed_imgs.size(); i++) {
+            if(fixed_imgs[i] != 'true'){
+                    collector << [patient_id, files[i], fix_image]
+            }
+        }
+        return collector
+
+
+
+    }.flatten().collate(3).view()
+    image_registration(paired_channel)
 }

@@ -10,9 +10,9 @@ process conversion{
     tag "nd2conversion"
     
     input:
-        path(input)
+        tuple val(patient), path(input), val(fixed)
     output:
-        path("*/*")
+        tuple val(patient), path("*/${input.baseName}.ome.tiff"), val(fixed), emit: ome
     script:
     """
         folder=`realpath $input`
@@ -25,12 +25,12 @@ process conversion{
                 echo "Skipping $input" 
             else
                 echo "$input" >> ${params.database}
-                # bfconvert -noflat -bigtiff -tilex 512 -tiley 512 -pyramid-resolutions 3 -pyramid-scale 2 $input \$folder/${input.baseName}.ome.tiff
-                touch \$folder/${input.baseName}.ome.tiff
+                bfconvert -noflat -bigtiff -tilex 512 -tiley 512 -pyramid-resolutions 3 -pyramid-scale 2 $input \$folder/${input.baseName}.ome.tiff
+                # touch \$folder/${input.baseName}.ome.tiff
             fi
         else
-            # bfconvert -noflat -bigtiff -tilex 512 -tiley 512 -pyramid-resolutions 3 -pyramid-scale 2 $input \$folder/${input.baseName}.ome.tiff
-            touch \$folder/${input.baseName}.ome.tiff
+            bfconvert -noflat -bigtiff -tilex 512 -tiley 512 -pyramid-resolutions 3 -pyramid-scale 2 $input \$folder/${input.baseName}.ome.tiff
+            # touch \$folder/${input.baseName}.ome.tiff
         fi
     """
 }
