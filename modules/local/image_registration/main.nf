@@ -1,16 +1,48 @@
-process image_registration{
+/*
+    Register images with respect to a predefined static image
+*/
+
+process register_images {
     cpus 5
     memory '10G'
-    publishDir "${params.outdir}", mode: "copy"
-    container "docker://tuoprofilo/toolname:versione"
+    publishDir "${params.output_dir_reg}", mode: "copy"
+    // container "docker://tuoprofilo/toolname:versione"
     tag "registration"
     
     input:
-        tuple val(patient), path(moving_image), path(fixed_image)
-    output:
-        tuple path("${fixed_image}"), path("corrected_${moving_image}") emit: ome
+    tuple val(fixed_image),
+        val(output_path_conv),
+        val(output_path_reg),
+        val(fixed_image_path),
+        val(params.mappings_dir),
+        val(params.registered_crops_dir),
+        val(params.crop_width_x),
+        val(params.crop_width_y),
+        val(params.overlap_x),
+        val(params.overlap_y),
+        val(params.overlap_factor),
+        val(params.auto_overlap),
+        val(params.delete_checkpoints),
+        val(params.logs_dir)
+
     script:
     """
-        python correct.py -fixed ${fixed_image} --moving ${moving_image} --output "corrected_${moving_image}"
+    if [ "${fixed_image}" == "False" ] || [ "${fixed_image}" == "FALSE" ]; then
+        register_images.py \
+            --input-path "${output_path_conv}" \
+            --output-path "${output_path_reg}" \
+            --fixed-image-path "${fixed_image_path}" \
+            --mappings-dir "${params.mappings_dir}" \
+            --registered-crops-dir "${params.registered_crops_dir}" \
+            --crop-width-x "${params.crop_width_x}" \
+            --crop-width-y "${params.crop_width_y}" \
+            --overlap-x "${params.overlap_x}" \
+            --overlap-y "${params.overlap_y}" \
+            --auto-overlap \
+            --delete-checkpoints \
+            --overlap-factor "${params.overlap_factor}" \
+            --logs-dir "${params.logs_dir}"
+    fi
     """
 }
+
