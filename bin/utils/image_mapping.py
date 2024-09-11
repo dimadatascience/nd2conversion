@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Import necessary libraries
 import cv2
 import numpy as np
@@ -7,7 +9,6 @@ from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import CCMetric
 from dipy.align.transforms import AffineTransform2D
 from dipy.align.imaffine import AffineRegistration
-
 
 logging_config.setup_logging()
 logger = logging.getLogger(__name__)
@@ -65,6 +66,7 @@ def compute_affine_mapping_cv2(y: np.ndarray, x: np.ndarray):
         fastThreshold=0, 
         edgeThreshold=0
     )
+
     keypoints1, descriptors1 = orb.detectAndCompute(y_normalized, None)
     keypoints2, descriptors2 = orb.detectAndCompute(x_normalized, None)
 
@@ -77,11 +79,7 @@ def compute_affine_mapping_cv2(y: np.ndarray, x: np.ndarray):
 
     if descriptors2 is not None and descriptors2.dtype != np.uint8:
         descriptors2 = descriptors2.astype(np.uint8)
-
-    # logger.debug(f"Descriptor1 shape: type: {descriptors1.dtype}")
-    # logger.debug(f"Descriptor2 shape: type: {descriptors2.dtype}")
     
-
     # Match descriptors using BFMatcher
     bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
     matches = bf.match(descriptors1, descriptors2)
@@ -110,12 +108,7 @@ def apply_mapping(mapping, x, method='dipy'):
     """
     if method not in ['cv2', 'dipy']:
         raise ValueError("Invalid method specified. Choose either 'cv2' or 'dipy'.")
-    
-    # if method == 'dipy' and not isinstance(mapping, SymmetricDiffeomorphicRegistration):
-    #     raise ValueError("Invalid mapping object for DIPY method.")
-    # if method == 'cv2' and not isinstance(mapping, np.ndarray):
-    #     raise ValueError("Invalid mapping object for OpenCV method.")
-    
+
     if method == 'dipy':
         mapped = mapping.transform(x)
     if method == 'cv2':
