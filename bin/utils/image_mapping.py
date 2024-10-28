@@ -4,7 +4,7 @@
 import cv2
 import numpy as np
 import logging
-from utils import logging_config
+from . import logging_config
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import CCMetric
 from dipy.align.transforms import AffineTransform2D

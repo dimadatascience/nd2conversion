@@ -4,8 +4,8 @@ import os
 import numpy as np
 import re
 import gc
-from utils.io_tools import save_pickle, load_pickle
-from utils.image_mapping import apply_mapping
+from .io_tools import save_pickle, load_pickle
+from .image_mapping import apply_mapping
 from concurrent.futures import ProcessPoolExecutor
 
 def process_crop(mapping_file, moving_file, checkpoint_dir=None):

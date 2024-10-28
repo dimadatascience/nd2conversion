@@ -7,8 +7,8 @@ import tifffile
 import nd2
 import h5py
 import numpy as np
-from utils.io_tools import load_pickle, save_pickle, load_h5
-from utils import logging_config 
+from .io_tools import load_pickle, save_pickle, load_h5
+from . import logging_config 
 
 logging_config.setup_logging()
 logger = logging.getLogger(__name__)

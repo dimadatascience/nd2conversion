@@ -5,10 +5,10 @@ import numpy as np
 import logging
 import re
 import gc
-from utils import logging_config
 from concurrent.futures import ProcessPoolExecutor
-from utils.io_tools import load_pickle, save_pickle
-from utils.image_mapping import compute_diffeomorphic_mapping_dipy
+from .io_tools import load_pickle, save_pickle
+from .image_mapping import compute_diffeomorphic_mapping_dipy
+from . import logging_config
 
 # Setup logging configuration
 logging_config.setup_logging()
