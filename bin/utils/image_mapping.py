@@ -10,6 +10,7 @@ from dipy.align.metrics import CCMetric
 from dipy.align.transforms import AffineTransform2D
 from dipy.align.imaffine import AffineRegistration
 
+# Set up logging configuration
 logging_config.setup_logging()
 logger = logging.getLogger(__name__)
 
@@ -26,49 +27,49 @@ def compute_diffeomorphic_mapping_dipy(y: np.ndarray, x: np.ndarray, sigma_diff=
     Returns:
         mapping: A mapping object containing the transformation information.
     """
+    # Check if both images have the same shape
     if y.shape != x.shape:
         raise ValueError("Reference image (y) and moving image (x) must have the same shape.")
-    
-    # Initialize the AffineRegistration and AffineTransform2D objects
-    affreg = AffineRegistration()
-    transform = AffineTransform2D()
 
-    # Perform the optimization procedure with two images reference_image and moving_image
-    # params0 is set to None as we don't have initial parameters
-    affine = affreg.optimize(y, x, transform, params0=None)
-
-    # Define the metric and registration object
+    # Define the metric and create the Symmetric Diffeomorphic Registration object
     metric = CCMetric(2, sigma_diff=sigma_diff, radius=radius)
     sdr = SymmetricDiffeomorphicRegistration(metric)
 
-    # Perform the diffeomorphic registration using a pre-alignment from affine registration
-    mapping = sdr.optimize(y, x, prealign=affine.affine)
+    # Perform the diffeomorphic registration using the pre-alignment from affine registration
+    mapping = sdr.optimize(y, x)
 
-    return mapping 
+    return mapping
 
-def compute_affine_mapping_cv2(y: np.ndarray, x: np.ndarray):
+def compute_affine_mapping_cv2(y: np.ndarray, x: np.ndarray, crop=False, crop_size=4000, n_features=2000):
     """
     Compute affine mapping using OpenCV.
     
     Parameters:
         y (ndarray): Reference image.
         x (ndarray): Moving image to be registered.
+        crop (bool, optional): Whether to crop the images before processing. Default is True.
+        crop_size (int, optional): Size of the crop. Default is 4000.
+        n_features (int, optional): Maximum number of features to detect. Default is 2000.
 
     Returns:
         matrix (ndarray): Affine transformation matrix.
     """    
-    # Normalize images to 8-bit (0-255) for feature detection
-    y_normalized = cv2.normalize(y, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-    x_normalized = cv2.normalize(x, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+    # Crop the images if specified and normalize them to 8-bit (0-255) for feature detection
+    if crop:
+        mid_y = np.array(y.shape) // 2
+        mid_x = np.array(x.shape) // 2
+        y = cv2.normalize(y[(mid_y[0]-crop_size):(mid_y[0]+crop_size), (mid_y[1]-crop_size):(mid_y[1]+crop_size)], None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        x = cv2.normalize(x[(mid_x[0]-crop_size):(mid_x[0]+crop_size), (mid_x[1]-crop_size):(mid_x[1]+crop_size)], None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+    
+    y = cv2.normalize(y, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+    x = cv2.normalize(x, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
 
     # Detect ORB keypoints and descriptors
-    orb = cv2.ORB_create(
-        fastThreshold=0, 
-        edgeThreshold=0
-    )
+    orb = cv2.ORB_create(fastThreshold=0, edgeThreshold=0, nfeatures=n_features)
 
-    keypoints1, descriptors1 = orb.detectAndCompute(y_normalized, None)
-    keypoints2, descriptors2 = orb.detectAndCompute(x_normalized, None)
+    # Compute keypoints and descriptors for both images
+    keypoints1, descriptors1 = orb.detectAndCompute(y, None)
+    keypoints2, descriptors2 = orb.detectAndCompute(x, None)
 
     if descriptors1 is None or descriptors2 is None:
         raise ValueError("One of the descriptors is empty")
@@ -89,14 +90,14 @@ def compute_affine_mapping_cv2(y: np.ndarray, x: np.ndarray):
     points1 = np.float32([keypoints1[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
     points2 = np.float32([keypoints2[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
 
-    # Compute affine transformation matrix
+    # Compute affine transformation matrix from matched points
     matrix, mask = cv2.estimateAffinePartial2D(points2, points1)
 
     return matrix
 
 def apply_mapping(mapping, x, method='dipy'):
     """
-    Apply mapping to image.
+    Apply mapping to the image.
     
     Parameters:
         mapping: A mapping object from either the DIPY or the OpenCV package.
@@ -104,14 +105,16 @@ def apply_mapping(mapping, x, method='dipy'):
         method (str, optional): Method used for mapping. Either 'cv2' or 'dipy'. Default is 'dipy'.
 
     Returns:
-        mapped (ndarray): Transformed image as 2D numpy array.
+        mapped (ndarray): Transformed image as a 2D numpy array.
     """
+    # Validate the method parameter
     if method not in ['cv2', 'dipy']:
         raise ValueError("Invalid method specified. Choose either 'cv2' or 'dipy'.")
 
+    # Apply the mapping based on the selected method
     if method == 'dipy':
         mapped = mapping.transform(x)
-    if method == 'cv2':
+    elif method == 'cv2':
         height, width = x.shape[:2]
         mapped = cv2.warpAffine(x, mapping, (width, height))
     

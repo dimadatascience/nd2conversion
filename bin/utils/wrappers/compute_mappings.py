@@ -1,70 +1,86 @@
 #!/usr/bin/env python
 
 import os
+import numpy as np
+import logging
+import re
+import gc
+from utils import logging_config
 from concurrent.futures import ProcessPoolExecutor
-from utils.pickle_utils import load_pickle, save_pickle
+from utils.io_tools import load_pickle, save_pickle
 from utils.image_mapping import compute_diffeomorphic_mapping_dipy
 
-def process_crop(fixed_crop, moving_crop, checkpoint_dir):
-    """
-    Process a single pair of fixed and moving crops, compute diffeomorphic mapping, and save/load checkpoint.
+# Setup logging configuration
+logging_config.setup_logging()
+logger = logging.getLogger(__name__)
 
-    Parameters:
-        fixed_crop (tuple): A tuple containing crop index and fixed image data.
-        moving_crop (tuple): A tuple containing crop index and moving image data.
+def process_crop(fixed_file, moving_file, current_crops_dir_fixed, current_crops_dir_moving, checkpoint_dir):
+    """
+    Loads a pair of fixed and moving crops from their respective directories,
+    computes the diffeomorphic mapping if not already cached, and returns the mapping.
+
+    Args:
+        fixed_file (str): Filename of the fixed crop.
+        moving_file (str): Filename of the moving crop.
+        current_crops_dir_fixed (str): Directory where fixed crops are stored.
+        current_crops_dir_moving (str): Directory where moving crops are stored.
         checkpoint_dir (str): Directory to save/load checkpoint files.
 
     Returns:
-        dict: A dictionary containing the crop index and its computed mapping.
+        mapping_diffeomorphic: The computed or loaded diffeomorphic mapping, or None if shapes do not match.
     """
-    checkpoint_path = os.path.join(checkpoint_dir, f'mapping_{fixed_crop[0][0]}_{fixed_crop[0][1]}.pkl')
-    
-    if os.path.exists(checkpoint_path):
-        # Load mapping from checkpoint if it exists
-        mapping_diffeomorphic = load_pickle(checkpoint_path)
-        print(f"Loaded checkpoint for i={fixed_crop[0][0]}_{fixed_crop[0][1]}")
-    else:
-        fixed_crop_dapi = fixed_crop[1][:, :, 2]
-        mov_crop_dapi = moving_crop[1][:, :, 2]
+    match = re.search(r'\d+_\d+_\d+', fixed_file)
+    idx = "_".join(match.group(0).split('_')[:-1]) # Get the first two indices
 
-        if fixed_crop_dapi.shape != mov_crop_dapi.shape:
+    # Construct the checkpoint path for storing/loading mappings
+    checkpoint_path = os.path.join(checkpoint_dir, f'mapping_{idx}.pkl')
+    if not os.path.exists(checkpoint_path):
+        fixed_crop = load_pickle(os.path.join(current_crops_dir_fixed, fixed_file))
+        moving_crop = load_pickle(os.path.join(current_crops_dir_moving, moving_file))  
+
+        # Check for shape mismatch
+        if fixed_crop[1].shape != moving_crop[1].shape:
+            logger.error(f"Shape mismatch for crops at indices {idx}.")
             return None
+
+        # Check for single valued crops (white areas)
+        if len(np.unique(fixed_crop[1])) == 1 or len(np.unique(moving_crop[1])) == 1:
+            mapping_diffeomorphic = 0
         else:
-            mapping_diffeomorphic = compute_diffeomorphic_mapping_dipy(fixed_crop_dapi, mov_crop_dapi)
-            # Save the computed mapping
-            save_pickle(mapping_diffeomorphic, checkpoint_path)
-            print(f"Saved checkpoint for i={fixed_crop[0][0]}_{fixed_crop[0][1]}")
+            # Compute the diffeomorphic mapping
+            mapping_diffeomorphic = compute_diffeomorphic_mapping_dipy(fixed_crop[1], moving_crop[1])
+        
+        del fixed_crop, moving_crop
+        gc.collect()
+        
+        # Save the computed mapping to a checkpoint
+        save_pickle(mapping_diffeomorphic, checkpoint_path)
+        logger.info(f"Saved checkpoint for i={idx}")
 
-    return {"index": fixed_crop[0], "mapping": mapping_diffeomorphic}
-
-def compute_mappings(fixed_crops, moving_crops, checkpoint_dir, max_workers=None):
+def compute_mappings(fixed_files, moving_files, current_crops_dir_fixed, current_crops_dir_moving, checkpoint_dir, max_workers=None):
     """
     Compute affine and diffeomorphic mappings between fixed and moving image crops in parallel.
 
     Parameters:
-        fixed_crops (list): List of tuples containing crop indices and fixed image data.
-        moving_crops (list): List of tuples containing crop indices and moving image data.
+        fixed_files (list): List of filenames for the fixed crops.
+        moving_files (list): List of filenames for the moving crops.
+        current_crops_dir_fixed (str): Directory containing fixed crops.
+        current_crops_dir_moving (str): Directory containing moving crops.
         checkpoint_dir (str): Directory to save/load checkpoint files.
-        max_workers (int, optional): Maximum number of workers to use for parallel processing.
+        max_workers (int, optional): Maximum number of workers for parallel processing.
 
     Returns:
-        list: List of mappings corresponding to each crop.
+        list: List of mappings corresponding to each crop, or None for mismatched shapes.
     """
-    if not os.path.exists(checkpoint_dir):
-        os.makedirs(checkpoint_dir)
-
-    mappings = []
+    if checkpoint_dir is not None:
+        # Create checkpoint directory if it doesn't exist
+        os.makedirs(checkpoint_dir, exist_ok=True)
 
     # Use ProcessPoolExecutor for parallel processing
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        # Submit tasks for each crop
-        futures = [
-            executor.submit(process_crop, fixed_crop, moving_crop, checkpoint_dir)
-            for fixed_crop, moving_crop in zip(fixed_crops, moving_crops)
-        ]
+        # Submit tasks for each crop to be processed in parallel
+        for fixed_file, moving_file in zip(fixed_files, moving_files): 
+            executor.submit(process_crop, fixed_file, moving_file, current_crops_dir_fixed, current_crops_dir_moving, checkpoint_dir)
+    
 
-        # Collect the results as they complete
-        for future in futures:
-            mappings.append(future.result()["mapping"])
 
-    return mappings

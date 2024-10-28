@@ -1,45 +1,89 @@
 /*
-    Register images with respect to a predefined static image
+    Register images with respect to a predefined fixed image
 */
 
-process register_images {
+process affine_registration {
     cpus 10
-    memory '20G'
-    publishDir "${params.output_dir_reg}", mode: "copy"
+    memory "50G"
+    // cpus 32
+    // memory "170G"
+    // errorStrategy 'retry'
+    // maxRetries = 1
+    // memory { 80.GB * task.attempt }
+    publishDir "${params.registered_crops_dir}", mode: "copy"
     // container "docker://tuoprofilo/toolname:versione"
-    tag "registration"
+    tag "registration_1"
     
     input:
-    tuple val(fixed_image),
-        val(output_path_conv),
-        val(output_path_reg),
+    tuple val(patient_id),
         val(fixed_image_path),
-        val(params.mappings_dir),
-        val(params.registered_crops_dir),
-        val(params.crop_width_x),
-        val(params.crop_width_y),
-        val(params.overlap_x),
-        val(params.overlap_y),
-        val(params.max_workers),
-        val(params.delete_checkpoints),
-        val(params.logs_dir)
+        val(input_path),
+        val(output_path)
+
+    output:
+    tuple val(patient_id),
+        val(fixed_image_path),
+        val(input_path),
+        val(output_path)
 
     script:
     """
-    if [ "${fixed_image}" == "False" ] || [ "${fixed_image}" == "FALSE" ]; then
-        register_images.py \
-            --input-path "${output_path_conv}" \
-            --output-path "${output_path_reg}" \
+    if [ "${input_path}" != "${fixed_image_path}" ]; then
+        affine_registration.py \
+            --input-path "${input_path}" \
+            --output-dir "${params.output_dir_reg}" \
             --fixed-image-path "${fixed_image_path}" \
+            --registered-crops-dir "${params.registered_crops_dir}" \
+            --crop-width-x "${params.crop_width_x}" \
+            --crop-width-y "${params.crop_width_y}" \
+            --overlap-x "${params.overlap_x}" \
+            --overlap-y "${params.overlap_y}" \
+            --logs-dir "${params.logs_dir}" 
+    fi
+    """
+}
+
+process diffeomorphic_registration {
+    cpus 10
+    memory "50G"
+    // cpus 32
+    // memory "170G"
+    // errorStrategy 'retry'
+    // maxRetries = 1
+    // memory { 80.GB * task.attempt }
+    publishDir "${params.registered_crops_dir}", mode: "copy"
+    // container "docker://tuoprofilo/toolname:versione"
+    tag "registration_2"
+    
+    input:
+    tuple val(patient_id),
+        val(fixed_image_path),
+        val(input_path),
+        val(output_path)
+    
+    output:
+    tuple val(patient_id),
+        val(fixed_image_path),
+        val(input_path),
+        val(output_path)
+
+    script:
+    """
+    if [ "${input_path}" != "${fixed_image_path}" ]; then
+        diffeomorphic_registration.py \
+            --input-path "${input_path}" \
+            --output-dir "${params.output_dir_reg}" \
+            --fixed-image-path "${fixed_image_path}" \
+            --crops-dir-fixed "${params.crops_dir_fixed}" \
+            --crops-dir-moving "${params.crops_dir_moving}" \
             --mappings-dir "${params.mappings_dir}" \
             --registered-crops-dir "${params.registered_crops_dir}" \
             --crop-width-x "${params.crop_width_x}" \
             --crop-width-y "${params.crop_width_y}" \
             --overlap-x "${params.overlap_x}" \
             --overlap-y "${params.overlap_y}" \
-            --max-workers ${params.max_workers} \
-            --delete-checkpoints \
-            --logs-dir "${params.logs_dir}"
+            --max-workers "${params.max_workers}" \
+            --logs-dir "${params.logs_dir}"     
     fi
     """
 }
