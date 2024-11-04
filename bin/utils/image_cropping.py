@@ -334,6 +334,8 @@ def crop_image_channels(input_path, fixed_image_path, current_crops_dir, crop_wi
                 save_pickle(crop, crop_save_path)  # Save the crop using pickle
                 
                 logger.debug(f'Saved crop_{index[0]}_{index[1]}_{ch} to {crop_save_path}')
+                del crop
+                gc.collect()
 
         del image  # Delete the array to free up memory
         gc.collect()  # Force garbage collection
