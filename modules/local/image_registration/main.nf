@@ -4,7 +4,7 @@
 
 process affine_registration {
     cpus 10
-    memory "50G"
+    memory "100G"
     // cpus 32
     // memory "170G"
     // errorStrategy 'retry'
