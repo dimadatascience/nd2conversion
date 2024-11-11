@@ -7,7 +7,7 @@ import tifffile
 import nd2
 import h5py
 import numpy as np
-from .io_tools import load_pickle, save_pickle, load_h5
+from .io import load_pickle, save_pickle, load_h5
 from . import logging_config 
 
 logging_config.setup_logging()
@@ -306,34 +306,31 @@ def crop_image_channels(input_path, fixed_image_path, current_crops_dir, crop_wi
     mov_shape = get_image_file_shape(input_path)  # Shape of moving image
     fixed_shape = get_image_file_shape(fixed_image_path)  # Shape of fixed image
     padding_shape = get_padding_shape(mov_shape, fixed_shape)  # Calculate padding shape
-
-    # Compute crop areas
     crop_areas = get_crop_areas(shape=padding_shape, crop_width_x=crop_width_x, crop_width_y=crop_width_y, overlap_x=overlap_x, overlap_y=overlap_y)
 
     # Pre-allocate the array to hold the padded images
     n_channels = 3  # Number of channels in the image
-    if not os.path.exists(current_crops_dir):
-        os.makedirs(current_crops_dir, exist_ok=True)
-        # Fixed image: load, pad to size and crop
+    os.makedirs(current_crops_dir, exist_ok=True)
+
+    # Loop through each channel and apply padding
+    for ch in range(n_channels):
         logger.debug(f"Loading image {path_to_load}")
-        image = load_h5(path_to_load)
-        # Loop through each channel and apply padding
-        for ch in range(n_channels):
-            # Read the fixed image and select the current channel
-            for index, area in zip(crop_areas[0], crop_areas[1]):
-                logger.debug(f'Processing crop_{index[0]}_{index[1]}_{ch}')
+        image = load_h5(path_to_load, [ch])
+        # Read the fixed image and select the current channel
+        for idx, area in zip(crop_areas[0], crop_areas[1]):
+            crop_save_path = os.path.join(current_crops_dir, f'crop_{idx[0]}_{idx[1]}_{ch}.pkl')
+            if not os.path.exists(crop_save_path):
+                logger.debug(f'Processing crop_{idx[0]}_{idx[1]}_{ch}')
         
                 # Crop the image using the specified crop area
                 crop = (
-                    index + (ch,), 
-                    crop_2d_array(zero_pad_array(np.squeeze(image[:,:,ch]), padding_shape), crop_areas=area)
+                    idx + (ch,), 
+                    crop_2d_array(zero_pad_array(np.squeeze(image), padding_shape), crop_areas=area)
                 )
-
-                # Save each crop individually with a unique name
-                crop_save_path = os.path.join(current_crops_dir, f'crop_{index[0]}_{index[1]}_{ch}.pkl')
-                save_pickle(crop, crop_save_path)  # Save the crop using pickle
                 
-                logger.debug(f'Saved crop_{index[0]}_{index[1]}_{ch} to {crop_save_path}')
+                save_pickle(crop, crop_save_path)
+                
+                logger.debug(f'Saved crop_{idx[0]}_{idx[1]}_{ch} to {crop_save_path}')
                 del crop
                 gc.collect()
 

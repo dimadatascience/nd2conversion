@@ -13,9 +13,8 @@ from utils.image_cropping import get_padding_shape
 from utils.image_cropping import zero_pad_array
 from utils.image_cropping import crop_2d_array
 from utils.image_cropping import get_crop_areas
-from utils.image_mapping import compute_affine_mapping_cv2
-from utils.wrappers.apply_mappings import apply_mapping
-from utils.io_tools import save_pickle, load_nd2, load_h5
+from utils.image_mapping import compute_affine_mapping_cv2, apply_mapping
+from utils.io import save_pickle, load_h5
 
 
 logging_config.setup_logging()
@@ -119,19 +118,18 @@ def affine_registration(input_path, fixed_image_path, current_registered_crops_d
 
     del moving_crop
     gc.collect()
-
-    # Load and pad the moving image
-    logger.debug(f"Loading moving image {input_path}")
-    moving_image = load_h5(input_path)
+    
     # Apply the affine transformation to each crop and channel
     n_channels = 3
     for ch in range(n_channels):
+        logger.debug(f"Loading moving image {input_path}")
+        moving_image = load_h5(input_path, [ch])
         for idx, area in zip(crop_areas[0], crop_areas[1]):
             checkpoint_filename = os.path.join(current_registered_crops_dir, f'affine_split_{idx[0]}_{idx[1]}_{ch}.pkl')
             if not os.path.exists(checkpoint_filename):
                 crop = crop_2d_array(
                     array=zero_pad_array(
-                        array=np.squeeze(moving_image[:, :, ch]), 
+                        array=np.squeeze(moving_image), 
                         target_shape=padding_shape
                     ),
                     crop_areas=area
@@ -143,9 +141,11 @@ def affine_registration(input_path, fixed_image_path, current_registered_crops_d
 
                 # Save the transformed crop
                 save_pickle(crop, checkpoint_filename)
+                del crop
+                gc.collect()
 
-    del moving_image, crop
-    gc.collect()
+        del moving_image
+        gc.collect()
 
 
 def main(args):
@@ -180,7 +180,11 @@ def main(args):
         makedirs=False
     )
 
-    n_registered_crops = len(os.listdir(current_registered_crops_dir))
+    if os.path.exists(current_registered_crops_dir):
+        n_registered_crops = len(os.listdir(current_registered_crops_dir))
+    else:
+        n_registered_crops = 0
+
     n_crops = len(crop_areas[0])
     
     if not os.path.exists(output_path) or n_registered_crops != n_crops:

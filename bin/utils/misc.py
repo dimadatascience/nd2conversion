@@ -73,7 +73,6 @@ def create_checkpoint_dirs(root_mappings_dir=None, root_registered_crops_dir=Non
 
     # Initialize registered crops directories
     if root_registered_crops_dir is not None:
-
         current_registered_crops_dir = os.path.join(root_registered_crops_dir, transformation, image_dirname, filename)
         current_registered_crops_no_overlap_dir = os.path.join(root_registered_crops_dir, transformation, 'no_overlap', image_dirname, filename)
         if makedirs:
@@ -104,3 +103,13 @@ def get_crops_dir(image_path, crops_dir):
     crops_wd = os.path.join(crops_dir, cycle_dir, filename_dir)
 
     return crops_wd
+
+def make_io_paths(input_path, output_dir):
+    input_path = input_path.replace('.nd2', '.h5')
+    filename = os.path.basename(input_path) # Name of the output file 
+    dirname = os.path.basename(os.path.dirname(input_path)) # Name of the parent directory to output file
+
+    input_path = os.path.join(output_dir, 'affine', dirname, filename) # Path to input file
+    output_path = os.path.join(output_dir, 'diffeomorphic', dirname, filename) # Path to output file
+
+    return input_path, output_path

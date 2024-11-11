@@ -1,23 +1,23 @@
 process export_image_1 {
     // cpus 5
     // memory "5G"
-    cpus 10
+    cpus 20
     memory "100G"
-    // errorStrategy 'retry'
-    // maxRetries = 1
-    // memory { 80.GB * task.attempt }
     publishDir "${params.output_dir_reg}", mode: "copy"
+    conda '/hpcnfs/scratch/DIMA/chiodin/miniconda3'
     // container "docker://tuoprofilo/toolname:versione"
     tag "export_affine"
 
     input:
     tuple val(patient_id),
+        val(cycle_id),
         val(fixed_image_path),
         val(input_path),
         val(output_path)
 
     output:
     tuple val(patient_id),
+        val(cycle_id),
         val(fixed_image_path),
         val(input_path),
         val(output_path)
@@ -43,23 +43,23 @@ process export_image_1 {
 process export_image_2 {
     // cpus 5
     // memory "5G"
-    cpus 10
+    cpus 20
     memory "100G"
-    // errorStrategy 'retry'
-    // maxRetries = 1
-    // memory { 80.GB * task.attempt }
     publishDir "${params.output_dir_reg}", mode: "copy"
+    conda '/hpcnfs/scratch/DIMA/chiodin/miniconda3'
     // container "docker://tuoprofilo/toolname:versione"
     tag "export_diffeo"
 
     input:
     tuple val(patient_id),
+        val(cycle_id),
         val(fixed_image_path),
         val(input_path),
         val(output_path)
 
     output:
     tuple val(patient_id),
+        val(cycle_id),
         val(fixed_image_path),
         val(input_path),
         val(output_path)
