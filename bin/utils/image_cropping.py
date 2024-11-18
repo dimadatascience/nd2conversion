@@ -281,7 +281,7 @@ def zero_pad_array(array, target_shape):
     
     return array
 
-def crop_image_channels(input_path, fixed_image_path, current_crops_dir, crop_width_x, crop_width_y, overlap_x, overlap_y, which_crop='fixed'):
+def crop_image_channels(input_path, current_crops_dir, crop_width_x, crop_width_y, overlap_x, overlap_y):
     """
     Crops both the moving and fixed images and saves the crops to directories.
     
@@ -298,21 +298,14 @@ def crop_image_channels(input_path, fixed_image_path, current_crops_dir, crop_wi
     Returns:
         tuple: Directories for fixed image crops and moving image crops. The saved arrays have shape (height, width, n_channels).
     """
-    # Define image to be loaded
-    if which_crop == 'fixed':
-        path_to_load = fixed_image_path
-    if which_crop == 'moving':
-        path_to_load = input_path
-
     # Get image shapes and compute padding
-    mov_shape = get_image_file_shape(input_path)  # Shape of moving image
-    fixed_shape = get_image_file_shape(fixed_image_path)  # Shape of fixed image
-    padding_shape = get_padding_shape(mov_shape, fixed_shape)  # Calculate padding shape
-    
-    crop_areas = get_crop_areas(shape=padding_shape, crop_width_x=crop_width_x, crop_width_y=crop_width_y, overlap_x=overlap_x, overlap_y=overlap_y)
+    # mov_shape = get_image_file_shape(input_path)  # Shape of moving image
+    # fixed_shape = get_image_file_shape(fixed_image_path)  # Shape of fixed image
+    # padding_shape = get_padding_shape(mov_shape, fixed_shape)  # Calculate padding shape
+    # crop_areas = get_crop_areas(shape=padding_shape, crop_width_x=crop_width_x, crop_width_y=crop_width_y, overlap_x=overlap_x, overlap_y=overlap_y)
 
-    # shape = get_image_file_shape(input_path)
-    # crop_areas = get_crop_areas(shape=shape, crop_width_x=crop_width_x, crop_width_y=crop_width_y, overlap_x=overlap_x, overlap_y=overlap_y)
+    shape = get_image_file_shape(input_path)
+    crop_areas = get_crop_areas(shape=shape, crop_width_x=crop_width_x, crop_width_y=crop_width_y, overlap_x=overlap_x, overlap_y=overlap_y)
 
     # Pre-allocate the array to hold the padded images
     os.makedirs(current_crops_dir, exist_ok=True)
@@ -320,15 +313,14 @@ def crop_image_channels(input_path, fixed_image_path, current_crops_dir, crop_wi
     # Loop through each channel and apply padding
     n_channels = 3  # Number of channels in the image
     for ch in range(n_channels):
-        logger.debug(f"Loading channel {ch} from image {path_to_load}")
-        image = load_h5(path_to_load, channels_to_load=[ch])
+        logger.debug(f"Loading channel {ch} from image {input_path}")
+        image = load_h5(input_path, channels_to_load=[ch])
         image = np.squeeze(image)
         # Read the fixed image and select the current channel
         for idx, area in zip(crop_areas[0], crop_areas[1]):
             crop_save_path = os.path.join(current_crops_dir, f'crop_{idx[0]}_{idx[1]}_{ch}.pkl')
             if not os.path.exists(crop_save_path):
                 logger.debug(f'Processing {crop_save_path}')
-
                 # Crop the image using the specified crop area
                 crop = (
                     idx + (ch,), 
@@ -339,8 +331,8 @@ def crop_image_channels(input_path, fixed_image_path, current_crops_dir, crop_wi
                 )
 
                 save_pickle(crop, crop_save_path)
-                
                 logger.debug(f'Saved crop ({idx[0]}, {idx[1]}, {ch}) to {crop_save_path}')
+                
                 del crop
                 gc.collect()
 

@@ -3,8 +3,8 @@
 import argparse
 import os 
 import logging
-import numpy as np
 import gc
+import re
 from utils.io import load_pickle, save_pickle
 from utils import logging_config
 from utils.image_cropping import crop_image_channels
@@ -27,28 +27,47 @@ def stack_dapi_crops(input_path, fixed_image_path, current_crops_dir_fixed, curr
 
     if whole_slide_id_fixed != whole_slide_id_moving:
         # List of files in each directory
-        fixed_files = sorted([os.path.join(current_crops_dir_fixed, file) for file in os.listdir(current_crops_dir_fixed)])
-        moving_files = sorted([os.path.join(current_crops_dir_moving, file) for file in os.listdir(current_crops_dir_moving)])
-        # moving_files = [ file.replace(current_crops_dir_fixed, current_crops_dir_moving) for file in fixed_files]
+        crop_files = sorted([os.path.join(current_crops_dir_fixed, file) for file in os.listdir(current_crops_dir_fixed)])
 
-        # Filter the files that end with '2.pkl'
-        fixed_files_dapi = [f for f in fixed_files if f.endswith('_2.pkl')]   
-        moving_files_dapi = [f for f in moving_files if f.endswith('_2.pkl')]
+        # Extract indices
+        indices = [tuple(map(int, re.search(r'\d+_\d+_\d+', filename).group(0).split('_'))) for filename in crop_files]
+        indices_dapi = [index for index in indices if index[2] == 2]
 
-        # moving_files_dapi = [f.replace(current_crops_dir_fixed, current_crops_dir_moving) for f in fixed_files_dapi] 
+        for idx in indices_dapi:
+            crop_filename = f"crop_{idx[0]}_{idx[1]}_{idx[2]}.pkl"
 
-        for fixed_file, moving_file in zip(fixed_files_dapi, moving_files_dapi):
+            fixed_file = os.path.join(current_crops_dir_fixed, crop_filename)
+            moving_file = os.path.join(current_crops_dir_moving, crop_filename)
+            
             fixed = load_pickle(fixed_file)
             moving = load_pickle(moving_file)
 
-            idx, fixed = fixed[0], fixed[1]
-            _, moving = moving[0], moving[1]
-
-            if fixed.shape == moving.shape:
-                save_pickle((idx, fixed, moving), f"{whole_slide_id_moving}_{idx[0]}_{idx[1]}_{idx[2]}.pkl")
+            if fixed[1].shape == moving[1].shape:
+                save_pickle((idx, fixed[1], moving[1]), f"{whole_slide_id_moving}_{idx[0]}_{idx[1]}_{idx[2]}.pkl")
+            else:
+                logger.error(f"Fixed crop and moving crop should be the same size. Fixed crop shape: {fixed[1].shape}, Moving crop shape: {moving[1].shape}")
             
             del fixed, moving
             gc.collect()
+
+        # # Filter the files that end with '2.pkl'
+        # fixed_files = sorted([os.path.join(current_crops_dir_fixed, file) for file in os.listdir(current_crops_dir_fixed)])
+        # moving_files = sorted([os.path.join(current_crops_dir_moving, file) for file in os.listdir(current_crops_dir_moving)])
+        # fixed_files_dapi = [f for f in fixed_files if f.endswith('_2.pkl')]   
+        # moving_files_dapi = [f for f in moving_files if f.endswith('_2.pkl')]
+        # for fixed_file, moving_file in zip(fixed_files_dapi, moving_files_dapi):
+        #     fixed = load_pickle(fixed_file)
+        #     moving = load_pickle(moving_file)
+        # 
+        #     idx, fixed = fixed[0], fixed[1]
+        #     _, moving = moving[0], moving[1]
+        # 
+        #     if fixed.shape == moving.shape:
+        #         save_pickle((idx, fixed, moving), f"{whole_slide_id_moving}_{idx[0]}_{idx[1]}_{idx[2]}.pkl")
+        #                 
+        #     del fixed, moving
+        #     gc.collect()
+
     else:
         save_pickle(0, f"{whole_slide_id_fixed}.pkl")
 
@@ -72,8 +91,7 @@ def main(args):
 
     if args.input_path != args.fixed_image_path:
         # Crop images and save them to the crops directories
-        crop_image_channels(input_path, fixed_image_path, current_crops_dir_fixed, 
-                    args.crop_width_x, args.crop_width_y, args.overlap_x, args.overlap_y, which_crop='fixed')
+        crop_image_channels(input_path, current_crops_dir_fixed, args.crop_width_x, args.crop_width_y, args.overlap_x, args.overlap_y)
 
     stack_dapi_crops(input_path, fixed_image_path, current_crops_dir_fixed, current_crops_dir_moving)
 

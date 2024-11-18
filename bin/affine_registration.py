@@ -53,12 +53,13 @@ def affine_registration(input_path, fixed_image_path, current_registered_crops_d
     # Apply the affine transformation to each crop and channel
     n_channels = 3
     for ch in range(n_channels):
-        logger.debug(f"Loading moving image {input_path}")
+        logger.debug(f"Loading channel {ch} from image {input_path}")
         moving_image = load_h5(input_path, channels_to_load=[ch])
         moving_image = np.squeeze(moving_image)
         for idx, area in zip(crop_areas[0], crop_areas[1]):
             checkpoint_filename = os.path.join(current_registered_crops_dir, f'crop_{idx[0]}_{idx[1]}_{ch}.pkl')
             if not os.path.exists(checkpoint_filename):
+                logger.debug(f'Processing {checkpoint_filename}')
                 crop = crop_2d_array(
                     array=moving_image,
                     crop_areas=area
@@ -99,9 +100,6 @@ def main(args):
 
     input_path = os.path.join(args.input_dir, 'image_registration', dirname_moving, filename_moving)
     fixed_image_path = os.path.join(args.input_dir, 'image_registration', dirname_fixed, filename_fixed)
-
-    print(f'INPUT PATH: {input_path}')
-    print(f'FIXED IMAGE PATH: {fixed_image_path}')
 
     output_path = os.path.join(args.output_dir, 'image_registration', 'affine', dirname_moving, filename_moving) # Path to output file
 
