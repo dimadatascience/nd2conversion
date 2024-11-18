@@ -44,7 +44,8 @@ def stack_dapi_crops(input_path, fixed_image_path, current_crops_dir_fixed, curr
             idx, fixed = fixed[0], fixed[1]
             _, moving = moving[0], moving[1]
 
-            save_pickle((idx, fixed, moving), f"{whole_slide_id_moving}_{idx[0]}_{idx[1]}_{idx[2]}.pkl")
+            if fixed.shape == moving.shape:
+                save_pickle((idx, fixed, moving), f"{whole_slide_id_moving}_{idx[0]}_{idx[1]}_{idx[2]}.pkl")
             
             del fixed, moving
             gc.collect()

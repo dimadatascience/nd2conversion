@@ -1,10 +1,10 @@
 /*
-    Convert nd2 files into multiple resolution hierarchical tiff files.
+    Convert images to h5 or ome_tiff
 */
 
 process convert_to_h5 {
     cpus 20
-    memory "100G"
+    memory "50G"
     conda '/hpcnfs/scratch/DIMA/chiodin/miniconda3'
     publishDir "${params.input_dir}", mode: "copy"
     // container "docker://yinxiu/bftools:latest"
@@ -29,6 +29,8 @@ process convert_to_h5 {
     convert_to_h5.py \
         --work-dir "${params.work_dir}" \
         --input-path "${input_path}" \
+        --crop-width-x 1000 \
+        --crop-width-y 1000 \
         --logs-dir "${params.logs_dir}" 
     """
 }

@@ -29,7 +29,8 @@ process affine_registration {
     if [ "${input_path}" != "${fixed_image_path}" ]; then
         affine_registration.py \
             --input-path "${input_path}" \
-            --output-dir "${params.output_dir_reg}" \
+            --input-dir "${params.input_dir}" \
+            --output-dir "${params.output_dir}" \
             --fixed-image-path "${fixed_image_path}" \
             --registered-crops-dir "${params.registered_crops_dir}" \
             --crop-width-x "${params.crop_width_x}" \
@@ -43,7 +44,7 @@ process affine_registration {
 
 process diffeomorphic_registration {
     cpus 2
-    memory "5G"
+    memory "100G"
     publishDir "${params.mappings_dir}", mode: "copy"
     conda '/hpcnfs/scratch/DIMA/chiodin/miniconda3'
     // container "docker://tuoprofilo/toolname:versione"

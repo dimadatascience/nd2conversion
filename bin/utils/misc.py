@@ -2,6 +2,7 @@
 
 import os
 import re
+import glob
 import shutil
 
 def empty_folder(folder_path):
@@ -19,14 +20,20 @@ def empty_folder(folder_path):
         elif os.path.isdir(item_path):
             shutil.rmtree(item_path)  # Remove directory and its contents
 
-def get_indexed_filepaths(registered_crops_dir):
-    crops_filenames = os.listdir(registered_crops_dir)
-    crops_paths = sorted([os.path.join(registered_crops_dir, file) for file in crops_filenames])
-    indices = sorted([tuple(map(int, re.search(r'\d+_\d+_\d+', filename).group(0).split('_'))) for filename in crops_filenames])
-    
-    crops_paths = [(idx, path) for idx, path in zip(indices, crops_paths)]
+# def get_indexed_filepaths(registered_crops_dir):
+#     crops_filenames = os.listdir(registered_crops_dir)
+#     crops_paths = sorted([os.path.join(registered_crops_dir, file) for file in crops_filenames])
+#     indices = sorted([tuple(map(int, re.search(r'\d+_\d+_\d+', filename).group(0).split('_'))) for filename in crops_filenames])
+#     
+#     crops_paths = [(idx, path) for idx, path in zip(indices, crops_paths)]
+# 
+#     return crops_paths
 
-    return crops_paths
+def get_indexed_filepaths_sorted(registered_crops_dir):
+    crops_filenames = os.listdir(registered_crops_dir)
+    indices = [tuple(map(int, re.search(r'\d+_\d+_\d+', filename).group(0).split('_'))) for filename in crops_filenames]
+    crops_paths = [((x, y, z), glob.glob(f"{registered_crops_dir}/crop_{x}_{y}_{z}.pkl")) for x, y, z in indices]
+    return sorted(crops_paths)
 
 def remove_file_extension(filename):
     """

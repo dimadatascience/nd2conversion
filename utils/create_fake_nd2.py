@@ -7,22 +7,26 @@ def create_fake_nd2_files(input_dir, output_dir):
     for root, dirs, files in os.walk(input_dir):
         for file in files:
             if file.endswith('.ome.tiff'):
-                # Get the relative path from input_dir
-                relative_path = os.path.relpath(root, input_dir)
+                file_ext = '.ome.tiff'
+            if file.endswith('.h5'):
+                file_ext = '.h5'
                 
-                # Create the corresponding .nd2 filename
-                nd2_filename = file.replace('.ome.tiff', '.nd2')
+            # Get the relative path from input_dir
+            relative_path = os.path.relpath(root, input_dir)
                 
-                # Create the output path for the fake .nd2 file
-                output_path = os.path.join(output_dir, relative_path, nd2_filename)
+            # Create the corresponding .nd2 filename
+            nd2_filename = file.replace(file_ext, '.nd2')
                 
-                # Ensure the directory exists
-                os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            # Create the output path for the fake .nd2 file
+            output_path = os.path.join(output_dir, relative_path, nd2_filename)
                 
-                # Create the empty .nd2 file
-                open(output_path, 'a').close()  # 'a' mode creates an empty file if it doesn't exist
+            # Ensure the directory exists
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
                 
-                print(f"Created: {output_path}")
+            # Create the empty .nd2 file
+            open(output_path, 'a').close()  # 'a' mode creates an empty file if it doesn't exist
+                
+            print(f"Created: {output_path}")
 
 def main():
     parser = argparse.ArgumentParser(description="Create fake .nd2 files based on .ome.tiff files structure.")

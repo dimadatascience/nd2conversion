@@ -2,7 +2,7 @@
 
 import numpy as np
 from .io import load_pickle
-from .misc import get_indexed_filepaths
+from .misc import get_indexed_filepaths_sorted
 from concurrent.futures import ProcessPoolExecutor
 
 def stitch_rectangle(stitched_image: np.array, rectangle: np.array, position: tuple):
@@ -28,12 +28,12 @@ def stitch_rectangle(stitched_image: np.array, rectangle: np.array, position: tu
 def process_stitch_channel(paths, positions, shape):
     stitched_image = np.zeros(shape, dtype='uint16')
     for path, position in zip(paths, positions):
-        crop = load_pickle(path)
+        crop = load_pickle(path[0])
         stitched_image = stitch_rectangle(stitched_image, crop[1], position)
     return stitched_image
 
 def stitch_crops(crops_dir, shape, positions, max_workers):
-    crops_paths = get_indexed_filepaths(crops_dir)
+    crops_paths = get_indexed_filepaths_sorted(crops_dir)
     n_channels = 3
     stitched_images = []
     

@@ -9,7 +9,7 @@ from utils.image_cropping import remove_crops_overlap
 from utils.image_stitching import stitch_crops
 from utils.misc import create_checkpoint_dirs
 from utils import logging_config
-from utils.io import save_h5
+from utils.io import save_h5, save_chunks_h5
 
 logging_config.setup_logging()
 logger = logging.getLogger(__name__)
@@ -27,15 +27,14 @@ def export_image(input_path, output_dir, fixed_image_path, overlap_x, overlap_y,
         mov_shape = get_image_file_shape(input_path)  # Shape of moving image
         fixed_shape = get_image_file_shape(fixed_image_path)  # Shape of fixed image
         shape = get_padding_shape(mov_shape, fixed_shape)  # Calculate padding shape
+
         # Remove overlap from crops
-
-        logger.debug(f'CURRENT REGISTERED CROPS DIR: {registered_crops_dir}')
-        logger.debug(f'CURRENT REGISTERED CROPS DIR - NO OVERLAP:{registered_crops_no_overlap_dir}')
-
         positions = remove_crops_overlap(registered_crops_dir, registered_crops_no_overlap_dir, overlap_x, overlap_y, max_workers)
+
         # Stitch crops and export image
         stitched_image = stitch_crops(registered_crops_no_overlap_dir, shape, positions, max_workers)
-        save_h5(stitched_image, output_path)
+        
+        save_chunks_h5(stitched_image, output_path, 1000, 1000)
         logger.info(f'Image {input_path} processed successfully.')
 
 def main(args):
@@ -61,8 +60,6 @@ def main(args):
             transformation=args.transformation
         )
 
-        
-    
         # Export image      
         export_image(input_path, args.output_dir, fixed_image_path, args.overlap_x, args.overlap_y, args.max_workers,
                      current_registered_crops_dir, current_registered_crops_no_overlap_dir, transformation=args.transformation)

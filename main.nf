@@ -17,6 +17,7 @@ include { apply_mappings } from './modules/local/image_registration/main.nf'
 include { export_image_1 } from './modules/local/export_image/main.nf'
 include { export_image_2 } from './modules/local/export_image/main.nf'
 include { stack_dapi_crops } from './modules/local/image_stacking/main.nf'
+include { pad_image } from './modules/local/image_padding/main.nf'
 // include { stack_images } from './modules/local/image_stacking/main.nf'
 
 
@@ -30,7 +31,7 @@ workflow {
 
     parsed_lines = parse_csv(params.sample_sheet_path)
 
-    // Prepare conversion parameters from parsed CSV data
+    // Prepare parameters from parsed CSV data
     params_parsed = parsed_lines.map { row ->
         tuple(
             row.patient_id,
@@ -41,24 +42,13 @@ workflow {
         )
     }
 
-    /*
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        CONVERSION TO h5
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    */
 
-    convert_to_h5(params_parsed)
-
-    /*
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        IMAGE REGISTRATION
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    */
-
-    affine_registration(convert_to_h5.out)
+    // convert_to_h5(params_parsed)
+    pad_image(params_parsed)
+    affine_registration(pad_image.out)
     export_image_1(affine_registration.out)
     stack_dapi_crops(export_image_1.out)
-    
+
     crops_data = stack_dapi_crops.out
             .map { it ->
                 def patient_id = it[0]

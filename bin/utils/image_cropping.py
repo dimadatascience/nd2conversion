@@ -7,6 +7,7 @@ import tifffile
 import nd2
 import h5py
 import numpy as np
+from .misc import get_indexed_filepaths_sorted
 from .io import load_pickle, save_pickle, load_h5
 from . import logging_config 
 
@@ -224,16 +225,17 @@ def get_image_file_shape(path, format='.h5'):
     
     if format == 'nd2' or format == '.nd2':
         with nd2.ND2File(path) as nd2_file:
-                # Get the dimensions of the first image
-                first_image_shape = nd2_file.asarray()[0].shape  # (channels, height, width) format
-                
-                # Assuming the first image is the one we want, extract height and width
-                width, height = first_image_shape[2], first_image_shape[1] # (channels, height, width)
+            # Access metadata about the dimensions
+            shape_metadata = nd2_file.sizes # Example: "XYCZT" or similar
+            shape_metadata = dict(shape_metadata)
+            width = shape_metadata.get('Y', 0)
+            height = shape_metadata.get('X', 0)
 
     if format == '.h5' or format == 'h5':
         with h5py.File(path, 'r') as f:
             shape = f['dataset'].shape
             width, height = shape[0], shape[1]
+            f.close()
         
     return width, height
 
@@ -306,31 +308,39 @@ def crop_image_channels(input_path, fixed_image_path, current_crops_dir, crop_wi
     mov_shape = get_image_file_shape(input_path)  # Shape of moving image
     fixed_shape = get_image_file_shape(fixed_image_path)  # Shape of fixed image
     padding_shape = get_padding_shape(mov_shape, fixed_shape)  # Calculate padding shape
+    
     crop_areas = get_crop_areas(shape=padding_shape, crop_width_x=crop_width_x, crop_width_y=crop_width_y, overlap_x=overlap_x, overlap_y=overlap_y)
 
+    # shape = get_image_file_shape(input_path)
+    # crop_areas = get_crop_areas(shape=shape, crop_width_x=crop_width_x, crop_width_y=crop_width_y, overlap_x=overlap_x, overlap_y=overlap_y)
+
     # Pre-allocate the array to hold the padded images
-    n_channels = 3  # Number of channels in the image
     os.makedirs(current_crops_dir, exist_ok=True)
 
     # Loop through each channel and apply padding
+    n_channels = 3  # Number of channels in the image
     for ch in range(n_channels):
-        logger.debug(f"Loading image {path_to_load}")
-        image = load_h5(path_to_load, [ch])
+        logger.debug(f"Loading channel {ch} from image {path_to_load}")
+        image = load_h5(path_to_load, channels_to_load=[ch])
+        image = np.squeeze(image)
         # Read the fixed image and select the current channel
         for idx, area in zip(crop_areas[0], crop_areas[1]):
             crop_save_path = os.path.join(current_crops_dir, f'crop_{idx[0]}_{idx[1]}_{ch}.pkl')
             if not os.path.exists(crop_save_path):
-                logger.debug(f'Processing crop_{idx[0]}_{idx[1]}_{ch}')
-        
+                logger.debug(f'Processing {crop_save_path}')
+
                 # Crop the image using the specified crop area
                 crop = (
                     idx + (ch,), 
-                    crop_2d_array(zero_pad_array(np.squeeze(image), padding_shape), crop_areas=area)
+                    crop_2d_array(
+                        array=image,
+                        crop_areas=area
+                    )
                 )
-                
+
                 save_pickle(crop, crop_save_path)
                 
-                logger.debug(f'Saved crop_{idx[0]}_{idx[1]}_{ch} to {crop_save_path}')
+                logger.debug(f'Saved crop ({idx[0]}, {idx[1]}, {ch}) to {crop_save_path}')
                 del crop
                 gc.collect()
 
@@ -342,7 +352,6 @@ Overlap removal
 """
 
 import itertools
-from utils.misc import get_indexed_filepaths
 from concurrent.futures import ProcessPoolExecutor
 
 def remove_overlap(crop, indices: list, overlap: int, axis: int = 0):
@@ -444,7 +453,7 @@ def process_crop(path, indices, overlap_x, overlap_y, checkpoint_dir):
 
 def remove_crops_overlap(registered_crops_dir, checkpoint_dir, overlap_x, overlap_y, max_workers):
     n_channels = 3
-    crops_paths = get_indexed_filepaths(registered_crops_dir)
+    crops_paths = get_indexed_filepaths_sorted(registered_crops_dir)
     
     # List to store the resulting shapes for stitching
     shapes = []
@@ -457,7 +466,7 @@ def remove_crops_overlap(registered_crops_dir, checkpoint_dir, overlap_x, overla
             paths = [path[1] for path in crops_paths if path[0][2] == ch]
             for path in paths:
                 # Submit the crop processing to the pool
-                futures.append(executor.submit(process_crop, path, indices, overlap_x, overlap_y, checkpoint_dir))
+                futures.append(executor.submit(process_crop, path[0], indices, overlap_x, overlap_y, checkpoint_dir))
         
         # Collect the results as they complete
         for future in futures:

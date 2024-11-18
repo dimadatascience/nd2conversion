@@ -7,7 +7,7 @@ import numpy as np
 import re
 import gc
 from utils import logging_config
-from utils.misc import create_checkpoint_dirs, make_io_paths
+from utils.misc import create_checkpoint_dirs
 from utils.io import load_pickle, save_pickle
 from utils.image_mapping import compute_diffeomorphic_mapping_dipy
 
@@ -106,7 +106,7 @@ def main(args):
         # Check if output image directory exists, create it if not
         output_dir_path = os.path.dirname(output_path)
         if not os.path.exists(output_dir_path):
-            os.makedirs(output_dir_path)
+            os.makedirs(output_dir_path, exist_ok=True)
             logger.debug(f'Output directory created successfully: {output_dir_path}')
 
         # Compute mappings

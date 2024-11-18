@@ -79,7 +79,7 @@ def main(args):
     for file in sorted_files:
         for ch in range(n_channels):
             # Load individual channel and transpose it
-            new_channel = np.transpose(np.squeeze(load_h5(file, [ch])), (2, 0, 1)) 
+            new_channel = np.transpose(np.squeeze(load_h5(file, channels_to_load=[ch])), (2, 0, 1)) 
             log_file_size(output_path)
 
             # Stack channel to fixed image

@@ -38,7 +38,7 @@ def compute_diffeomorphic_mapping_dipy(y: np.ndarray, x: np.ndarray, sigma_diff=
 
     return mapping
 
-def compute_affine_mapping_cv2(y: np.ndarray, x: np.ndarray, crop=False, crop_size=4000, n_features=2000):
+def compute_affine_mapping_cv2(y: np.ndarray, x: np.ndarray, crop=False, crop_size=None, n_features=2000):
     """
     Compute affine mapping using OpenCV.
     
@@ -53,7 +53,7 @@ def compute_affine_mapping_cv2(y: np.ndarray, x: np.ndarray, crop=False, crop_si
         matrix (ndarray): Affine transformation matrix.
     """    
     # Crop the images if specified and normalize them to 8-bit (0-255) for feature detection
-    if crop:
+    if crop and crop_size is not None:
         mid_y = np.array(y.shape) // 2
         mid_x = np.array(x.shape) // 2
         y = cv2.normalize(y[(mid_y[0]-crop_size):(mid_y[0]+crop_size), (mid_y[1]-crop_size):(mid_y[1]+crop_size)], None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)

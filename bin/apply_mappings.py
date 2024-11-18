@@ -7,7 +7,7 @@ import numpy as np
 import re
 import gc
 from utils import logging_config
-from utils.misc import create_checkpoint_dirs, get_crops_dir, make_io_paths
+from utils.misc import create_checkpoint_dirs, get_crops_dir
 from utils.io import save_pickle, load_pickle
 from utils.image_mapping import apply_mapping
 from concurrent.futures import ProcessPoolExecutor
@@ -28,7 +28,7 @@ def process_crop(mapping_file, moving_file, checkpoint_dir=None):
     match = re.search(r'\d+_\d+_\d+', moving_file)
     idx = match.group(0)
 
-    checkpoint_path = os.path.join(checkpoint_dir, f'registered_split_{idx}.pkl')
+    checkpoint_path = os.path.join(checkpoint_dir, f'crop_{idx}.pkl')
     if not os.path.exists(checkpoint_path):
         moving_crop = load_pickle(moving_file)
         mapping = load_pickle(mapping_file)
